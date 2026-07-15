@@ -69,9 +69,10 @@ class BioCLIP2Classifier:
         self._rank_enum = None
 
     def load(self):
-        # BioCLIP-2.5 (ViT-H/14) needs the pybioclip patch (see patch_pybioclip.py);
-        # applied at image build time. Import here to keep module import light.
-        import patch_pybioclip  # noqa: F401  (applies the 2.5 patch on import)
+        # BioCLIP-2.5 (ViT-H/14) needs the pybioclip patch (see patch_pybioclip.py),
+        # which is applied ONCE at image-build time (Dockerfile) — NOT here: the
+        # patch is not idempotent (it asserts the pristine source), so it must not
+        # run twice. Import bioclip lazily to keep module import light for tests.
         from bioclip import Rank
         from bioclip.predict import TreeOfLifeClassifier
         self._rank_enum = getattr(Rank, self.rank.upper())
