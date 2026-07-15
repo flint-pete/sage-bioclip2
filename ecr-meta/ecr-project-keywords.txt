@@ -1,0 +1,22 @@
+Species Classification
+Biodiversity Monitoring
+BioCLIP
+BioCLIP2
+BioCLIP 2.5
+ViT-H
+Taxonomy
+Ecology
+Wildlife
+Conservation
+Machine Learning
+Computer Vision
+Edge Computing
+Zero-shot Classification
+Cache Consumer
+Producer-Consumer
+Detect-Classify Cascade
+pywaggle2
+Frame-anchored
+TreeOfLife
+Hummingbird
+Vision-Language Model
