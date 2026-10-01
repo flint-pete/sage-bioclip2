@@ -176,7 +176,7 @@ def main():
   python3 app.py --source cache --input /local-cache/camera/top --rank Species
 
   # Local testing on a folder of images
-  python3 app.py --source image-dir --input ./tests/test-images --rank Species
+  python3 app.py --source image-dir --input ../sage-yolo2/tests/test-images --rank Species
 """)
     parser.add_argument("--source", required=True,
                         choices=["cache", "image-dir"],

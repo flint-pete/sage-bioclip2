@@ -6,6 +6,52 @@ on-node `/local-cache`, runs BioCLIP-2.5 (TreeOfLife-200M) taxonomy
 classification, and publishes species predictions **frame-anchored** (observation
 time = the moment the photo was taken).
 
+## Where this fits
+
+sage-bioclip2 is the second **test consumer** in the media-sampler3 stack. It is
+the last stage of the cascade:
+
+```
+camera ─▶ media-sampler3 ─▶ /local-cache/camera/top/ ─▶ sage-yolo2 ─▶ /local-cache/camera-crops/top-crop-N/ ─▶ sage-bioclip2 ─▶ env.species.* ─▶ Beehive
+```
+
+- **Prerequisites:** a running [media-sampler3](https://github.com/flint-pete/media-sampler3)
+  producer, and [sage-yolo2](https://github.com/flint-pete/sage-yolo2) running with
+  `--crop-match` (e.g. `bird:0.4`) and `--crop-cache-name camera-crops`. Without
+  crops there is nothing for bioclip2 to classify.
+- **Install, restart and the big picture** live in the hub repo:
+  - [install guide](https://github.com/flint-pete/media-sampler3/blob/master/INSTALLING-MEDIA-SAMPLER3.md)
+    (Steps 5, 6d and 6f)
+  - [REBOOT-RECOVERY.md](https://github.com/flint-pete/media-sampler3/blob/master/REBOOT-RECOVERY.md)
+  - [HOW-IT-WORKS.md](https://github.com/flint-pete/media-sampler3/blob/master/docs/HOW-IT-WORKS.md)
+- `/local-cache` is provided and bounded by
+  [wes-local-cache-manager](https://github.com/flint-pete/wes-local-cache-manager).
+  If it isn't mounted, cache mode **fails fast** at startup.
+
+**The model.** [BioCLIP-2.5](https://huggingface.co/imageomics/bioclip-2.5-vith14)
+(ViT-H/14) is a CLIP-style vision–language model trained on the
+TreeOfLife-200M dataset. bioclip2 compares an image against precomputed text
+embeddings for every taxon in the tree of life and returns the best matches at
+the chosen rank (`--rank Species` by default).
+
+- **Why `patch_pybioclip.py` exists.** The `pybioclip` 2.1.5 library only knows
+  BioCLIP 1 and 2. At image-build time this script adds the 2.5 model string and
+  its embedding filenames to pybioclip's internals. It's applied once in the
+  `Dockerfile`, and running it a second time isn't supported.
+- **The model is baked into the image.** The Dockerfile instantiates the
+  classifier at build time, which downloads the model and the TreeOfLife
+  embeddings. So the image is about 17 GB, and the pod needs **no network at
+  runtime**.
+
+**Code map**
+
+| File | What it does |
+|---|---|
+| `app.py` | CLI, wake loop, `BioCLIP2Classifier` (pybioclip `TreeOfLifeClassifier` wrapper), publishing and provenance |
+| `consumer.py`, `selection.py`, `seenstore.py`, `node_info.py`, `save_match.py` | Cache-consumer machinery copied (vendored) unchanged from sage-yolo2 (see `VENDORED.md`) |
+| `patch_pybioclip.py` | Build-time patch that enables BioCLIP-2.5 in pybioclip |
+| `scripts/deploy-sideload.sh` | Native Thor build plus k3s import (identical to sage-yolo2's) |
+
 ## 1. The switch: full frames OR crops, one CLI parameter
 
 The cache directory bioclip2 reads is a single `--input` argument. Because
@@ -40,9 +86,23 @@ python3 app.py --source cache --input /local-cache/camera-crops/top-crop-0 \
 # Same, but full frames
 python3 app.py --source cache --input /local-cache/camera/top --every 10m --all-unseen --rank Species
 
-# Local testing on a folder of images (no node/cache)
-python3 app.py --source image-dir --input ./tests/test-images --rank Species
+# Local testing on a folder of images (no node/cache); sage-yolo2 ships a bird fixture
+python3 app.py --source image-dir --input ../sage-yolo2/tests/test-images --rank Species
 ```
+
+**One instance reads one crop directory.** sage-yolo2 writes the first matching
+detection of each frame to `top-crop-0`, the second to `top-crop-1`, and so on.
+The standard setup reads only `top-crop-0`, so a second bird in the same frame is
+not classified. To cover more, run one bioclip2 instance per `top-crop-N`
+directory, each with a different `--name` and `WAGGLE_TASK_NAME`. Reading every
+crop directory from one instance is an open improvement.
+
+**Thresholds work together.** yolo2's `--crop-match bird:0.4` decides what gets
+cropped. bioclip2's `--min-confidence` decides whether a top species result is
+reported as confident (`env.species.<rank>`). A loose crop threshold sends more
+non-birds and partial birds to the classifier. BioCLIP will still name *some*
+organism for them (a rabbit at about 70% has been seen), so tighten `--crop-match`
+if that matters.
 
 ## 3. CLI reference
 
@@ -76,14 +136,27 @@ python3 app.py --source image-dir --input ./tests/test-images --rank Species
 | `env.species.top5` | JSON | Top-k `[{name,common_name,confidence},…]`. |
 | `env.species.summary` | int | 1 = confident prediction, 0 = none / heartbeat. |
 
-**Meta on every record:** `camera`, `model`, `rank`; in cache mode `vsn`/`node_id`/
-`lat`/`lon` when the frame carries them.
+**Meta on every record:** `camera`, `model`, `rank`. In cache mode, also
+`vsn`/`node_id`/`lat`/`lon`/`location_source` when the frame carries them.
+Identity comes from the frame's EXIF first, with the pod's `WAGGLE_NODE_*` env
+as fallback.
 
 **Crop provenance (when classifying a sage-yolo2 crop):** the crop's `source{}`
-block is surfaced as `source_class`, `source_confidence`, `source_unique_id` on
-the species record — so a species result traces back to the YOLO detection AND the
-parent full frame. Plain media-sampler3 frames have no `source` (full-frame mode);
-these keys are simply absent.
+block is surfaced as `source_class`, `source_confidence` and `source_unique_id`
+on the species record. `source_unique_id` is the SHA-256 of the **parent full
+frame**, the media-sampler3 JPEG the crop was cut from. So a species result
+traces back to the YOLO detection and the exact producer frame. Plain
+media-sampler3 frames have no `source` block (full-frame mode), so these keys are
+simply absent.
+
+Example (abridged) of what a species record carries:
+
+```
+name: env.species.species    value: "Cardinalis cardinalis"
+timestamp: <capture time of the parent frame>
+meta: camera=top-crop-0, rank=Species, vsn=<VSN>,
+      source_class=bird, source_confidence=0.91, source_unique_id=<sha256 of parent frame>
+```
 
 **Frame-anchored.** In cache mode the record timestamp is the frame's CAPTURE
 time (read from its metadata), not when BioCLIP ran.
@@ -91,9 +164,18 @@ time (read from its metadata), not when BioCLIP ran.
 ## 5. Architecture / reuse
 
 The cache-consumer machinery (`consumer.py`, `selection.py`, `seenstore.py`,
-`node_info.py`, `save_match.py`) is **vendored byte-identical from sage-yolo2** —
-it is the shared v2 read contract. See `VENDORED.md`. The BioCLIP2 brains
-(`BioCLIP2Classifier`, `patch_pybioclip.py`) are grafted from `sage-bioclip` v1.
+`node_info.py`, `save_match.py`) is **copied unchanged from sage-yolo2**. It is the
+shared v2 read contract; see `VENDORED.md`. The BioCLIP2-specific parts
+(`BioCLIP2Classifier`, `patch_pybioclip.py`) were carried over from
+`sage-bioclip` v1.
+
+**Seen-store location (known quirk).** The copied `seenstore.py` names its plugin
+directory `sage-yolo2`, so bioclip2's memory lives at
+`/local-cache/.state/sage-yolo2/<consumer-id>/camera-crops/top-crop-0/seen`.
+With the launch flags below, `<consumer-id>` is `camera-sage-bioclip2`, which
+keeps it separate from yolo2's own store. Keep `WAGGLE_JOB_NAME` and
+`WAGGLE_TASK_NAME` the same across relaunches, or the memory is lost and the
+backlog is reclassified.
 
 ## 6. Testing
 
@@ -113,14 +195,28 @@ scripts/deploy-sideload.sh --skip-register     # build (arm64) → import to k3s
 sudo pluginctl run --name sage-bioclip2-consumer --selector zone=core \
   --resource limit.memory=16Gi,request.memory=4Gi \
   -v /media/plugin-data/local-cache:/local-cache \
+  -e WAGGLE_JOB_NAME=camera -e WAGGLE_TASK_NAME=sage-bioclip2 \
   registry.sagecontinuum.org/beckman/sage-bioclip2:2.0.0 -- \
   --source cache --input /local-cache/camera-crops/top-crop-0 \
-  --every 10m --all-unseen --rank Species --min-confidence 0.1
+  --every 10m --all-unseen --max-frames 0 --rank Species --min-confidence 0.1
 ```
 
-`--selector zone=core` is required with `-v`; `--resource limit.memory=16Gi`
-avoids OOMKill. Switch to full frames by changing one arg to
+This is the same command as the install guide's Step 6d.
+
+- `--selector zone=core` is required whenever you use `-v`.
+- `--resource limit.memory=16Gi` prevents an OOMKill.
+- The `-e` variables name the seen-store, so it survives relaunches.
+- `--max-frames 0` means "drain all unseen crops each wake". The default is 1,
+  which would fall behind.
+
+To classify full frames instead, change one argument to
 `--input /local-cache/camera/top`.
+
+## Docs in this repo
+
+- `VENDORED.md`: which files are copied from sage-yolo2, and what must stay in sync.
+- `CHANGELOG.md`: release notes.
+- [docs/history/](docs/history/): the July 2026 handoff/status notes (not maintained).
 
 ## Contact
 

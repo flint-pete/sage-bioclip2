@@ -2,6 +2,28 @@
 
 All notable changes to the `sage-bioclip2` Sage plugin.
 
+## Unreleased (docs only; image stays 2.0.0)
+
+### Changed
+- **Student-readiness README pass:**
+  - added "Where this fits", prerequisites, what BioCLIP-2.5 is, why
+    `patch_pybioclip.py` exists, and a code map
+  - a species-record example; `source_unique_id` is the **parent frame's**
+    SHA-256 (corrects the earlier "parent crop" wording)
+  - the seen-store path quirk, the one-instance-per-crop-dir limitation, and the
+    threshold trade-off
+  - the deploy command now matches the install guide (adds `-e WAGGLE_*`,
+    `--max-frames 0`)
+- Fixed the image-dir test path (`../sage-yolo2/tests/test-images`) in the README
+  and the `--help` epilog.
+- `consumer.py` was re-synced from sage-yolo2 (comment lines only), so all
+  vendored modules are byte-identical again. `node_info.py` was re-synced to
+  pywaggle2-nodeinfo v0.1.1 (a doc-link line only).
+- `HANDOFF.md` moved to `docs/history/`. `VENDORED.md` documents the seen-store
+  quirk and drops a private-file link.
+- `scripts/deploy-sideload.sh` was synced with sage-yolo2's: the drift check is
+  per-plugin and the final message is accurate.
+
 ## 2.0.0 — 2026-07-15
 
 First release. BioCLIP2 species classifier re-architected onto the sage-yolo2 v2

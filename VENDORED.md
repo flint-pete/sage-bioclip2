@@ -1,6 +1,6 @@
 # Vendored code
 
-Modules vendored **byte-identical** from `sage-yolo2` — this is the v2
+Modules vendored **byte-identical** from `sage-yolo2` (check with the loop below) — this is the v2
 cache-consumer pattern, shared across the v2 plugin family. sage-bioclip2 is a
 second consumer of the same contract, so it reuses the same read-side machinery.
 
@@ -30,6 +30,12 @@ re-vendor these from sage-yolo2 and re-run `make test`. The carried-over
 `tests/test_consumer*.py` / `test_selection.py` / `test_seenstore.py` /
 `test_identity.py` are the contract guard.
 
+**Known quirk:** the vendored `seenstore.py` hard-codes `PLUGIN_NAME = "sage-yolo2"`,
+so sage-bioclip2's seen-store lives under `/local-cache/.state/sage-yolo2/<consumer-id>/...`
+(its consumer-id, e.g. `camera-sage-bioclip2`, keeps it separate from yolo2's own
+store). Changing it would orphan existing seen-memory on deployed nodes, so it is
+documented rather than changed.
+
 ## bioclip-specific (NOT vendored — grafted from sage-bioclip v1)
 
 - `patch_pybioclip.py` — enables BioCLIP-2.5 ViT-H/14 in pybioclip 2.1.5 (patches
@@ -42,4 +48,4 @@ re-vendor these from sage-yolo2 and re-run `make test`. The carried-over
 Vendoring was chosen (matching sage-yolo2's `crop_writer` precedent) to keep this
 a single-repo build. With TWO consumers now on the same contract, extracting a
 shared `sage-cache-consumer` package is the cleaner long-term move — tracked as a
-follow-up once sage-bioclip2 is proven on-node. See `../sage-bioclip2-PLAN.md`.
+follow-up (sage-bioclip2 is now proven on-node; the extraction has not been done).

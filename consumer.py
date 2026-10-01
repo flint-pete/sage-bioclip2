@@ -2,12 +2,12 @@
 """sage-yolo2 -- cache consumer (Stage 1: read + fail-fast).
 
 sage-yolo2 does NOT open a camera in its production path. It CONSUMES frames that
-media-sampler3 (THE producer, for both images and audio) wrote into the shared WES
-``/local-cache``. This module is the read side of that contract; it is deliberately
-pure (no cv2, YOLO, or pywaggle imports) so it is unit-testable offline.
+media-sampler3 (the producer) wrote into the shared WES ``/local-cache``. This
+module is the read side of that contract; it is deliberately pure (no cv2, YOLO, or
+pywaggle imports) so it is unit-testable offline.
 
-The frame contract is the producer's v2 cache layout (verified against
-media-sampler3's ``cache.py`` / ``metadata.py``):
+The frame contract is media-sampler3's v2 cache layout (verified against its
+``cache.py`` / ``metadata.py``):
 
   * cache root      : ``/local-cache`` (default), provided by wes-local-cache-manager
   * per-stream dir  : ``<root>/<cache-name>/<camera>/``
@@ -37,7 +37,7 @@ import re
 logger = logging.getLogger("sage-yolo2.consumer")
 
 # Default shared cache mount, provided by wes-local-cache-manager. Overridable via
-# the same env var the producer honours, so producer and consumer stay in sync.
+# the same env var media-sampler3 honours, so producer and consumer stay in sync.
 LOCAL_CACHE_DIR = "/local-cache"
 CACHE_ROOT_ENV = "IS2_CACHE_ROOT"
 
