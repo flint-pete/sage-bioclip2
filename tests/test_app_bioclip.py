@@ -65,9 +65,9 @@ class StubClassifier:
     """Returns a fixed confident prediction for every image."""
     def __init__(self, preds=None):
         self.preds = preds or [
-            {"name": "Archilochus colubris", "common_name": "Ruby-throated Hummingbird",
+            {"name": "Cardinalis cardinalis", "common_name": "Northern Cardinal",
              "confidence": 0.87},
-            {"name": "Selasphorus rufus", "common_name": "Rufous Hummingbird",
+            {"name": "Cyanocitta cristata", "common_name": "Blue Jay",
              "confidence": 0.05},
         ]
     def load(self): pass
@@ -121,9 +121,9 @@ def test_publish_species_confident():
     assert "env.species.species.confidence" in topics
     assert "env.species.top5" in topics
     sp = [x for x in p.published if x[0] == "env.species.species"][0]
-    assert sp[1] == "Archilochus colubris"
+    assert sp[1] == "Cardinalis cardinalis"
     assert sp[2] == 123                       # frame-anchored
-    assert sp[3]["common_name"] == "Ruby-throated Hummingbird"
+    assert sp[3]["common_name"] == "Northern Cardinal"
 
 
 def test_publish_species_below_confidence_no_rank_topic():
@@ -140,7 +140,7 @@ def test_publish_species_below_confidence_no_rank_topic():
 def test_cache_wake_full_frame(tmp_path, monkeypatch):
     monkeypatch.setattr(consumer, "resolve_cache_root", lambda explicit=None: str(tmp_path))
     monkeypatch.setattr(consumer, "get_node_info", lambda: None)
-    cam_dir = os.path.join(str(tmp_path), "hummingcam", "top")
+    cam_dir = os.path.join(str(tmp_path), "camera", "top")
     _write_v2_frame(cam_dir, 1700000000000000000, "H00F", "top", unique_id="uidfull")
 
     import seenstore
@@ -151,7 +151,7 @@ def test_cache_wake_full_frame(tmp_path, monkeypatch):
     app._process_cache_wake(p, StubClassifier(), args, [], seen, 0, 0)
 
     sp = [x for x in p.published if x[0] == "env.species.species"]
-    assert len(sp) == 1 and sp[0][1] == "Archilochus colubris"
+    assert len(sp) == 1 and sp[0][1] == "Cardinalis cardinalis"
     assert sp[0][2] == 1700000000000000000       # frame-anchored to capture ts
     assert "source_class" not in sp[0][3]         # full frame → no provenance
     assert "uidfull" in seen._set                  # marked seen
@@ -162,7 +162,7 @@ def test_cache_wake_full_frame(tmp_path, monkeypatch):
 def test_cache_wake_crop_attaches_provenance(tmp_path, monkeypatch):
     monkeypatch.setattr(consumer, "resolve_cache_root", lambda explicit=None: str(tmp_path))
     monkeypatch.setattr(consumer, "get_node_info", lambda: None)
-    crop_dir = os.path.join(str(tmp_path), "hummingcam-crops", "top-crop-0")
+    crop_dir = os.path.join(str(tmp_path), "camera-crops", "top-crop-0")
     src = {"source_class": "bird", "source_confidence": 0.91,
            "source_bbox": [10, 10, 30, 30], "source_unique_id": "parentuid",
            "detection_index": 0}
@@ -192,8 +192,8 @@ def test_input_switch_is_config_only(tmp_path, monkeypatch):
     monkeypatch.setattr(consumer, "get_node_info", lambda: None)
     import seenstore
     for i, (sub, source) in enumerate([
-            (("hummingcam", "top"), None),
-            (("hummingcam-crops", "top-crop-0"),
+            (("camera", "top"), None),
+            (("camera-crops", "top-crop-0"),
              {"source_class": "bird", "source_confidence": 0.9,
               "source_bbox": [1, 1, 9, 9], "source_unique_id": "pu", "detection_index": 0}),
     ]):
@@ -214,8 +214,8 @@ def test_save_match_on_common_name(tmp_path):
     from save_match import parse_save_match
     p = FakePlugin()
     frame = np.full((40, 40, 3), 120, dtype=np.uint8)
-    # rule targets the common name "Ruby-throated Hummingbird"
-    rules = parse_save_match("Ruby-throated Hummingbird:0.5")
+    # rule targets the common name "Northern Cardinal" (an example bird species)
+    rules = parse_save_match("Northern Cardinal:0.5")
     app._maybe_upload(p, Args(upload_image="N"), StubClassifier().preds, frame,
                       timestamp=1, camera="top", save_rules=rules)
     assert len(p.uploads) == 1                     # matched on common name

@@ -9,36 +9,36 @@ time = the moment the photo was taken).
 ## 1. The switch: full frames OR crops, one CLI parameter
 
 The cache directory bioclip2 reads is a single `--input` argument. Because
-image-sampler2 frames and sage-yolo2 crops are the **same v2 format**, the same
+media-sampler3 frames and sage-yolo2 crops are the **same v2 format**, the same
 plugin classifies either — with no code change:
 
 ```bash
-# Classify FULL image-sampler2 frames
-python3 app.py --source cache --input /local-cache/hummingcam/top --rank Species
+# Classify FULL media-sampler3 frames
+python3 app.py --source cache --input /local-cache/camera/top --rank Species
 
-# Classify only sage-yolo2 BIRD CROPS (the detect→classify cascade) — change ONE arg
-python3 app.py --source cache --input /local-cache/hummingcam-crops/top-crop-0 --rank Species
+# Classify only sage-yolo2 crops (the detect→classify cascade) — change ONE arg
+python3 app.py --source cache --input /local-cache/camera-crops/top-crop-0 --rank Species
 ```
 
-That's the intended production pattern: **image-sampler2 → sage-yolo2 (crop
-producer) → sage-bioclip2 (crop consumer)**, all mediated by the shared cache,
-with no plugin calling another.
+That's the intended production pattern: **media-sampler3 (THE producer) →
+sage-yolo2 (crop producer) → sage-bioclip2 (crop consumer)**, all mediated by the
+shared cache, with no plugin calling another.
 
 ```
-image-sampler2      sage-yolo2 (detect + crop)          sage-bioclip2 (classify)
- camera → cache  →   YOLO, crop birds → crop stream  →   read crops, BioCLIP2 species
- hummingcam/top      hummingcam-crops/top-crop-<idx>      env.species.* + provenance
+media-sampler3      sage-yolo2 (detect + crop)          sage-bioclip2 (classify)
+ camera → cache  →   YOLO detect + crop → crop stream →   read crops, BioCLIP2 species
+ camera/top          camera-crops/top-crop-<idx>          env.species.* + provenance
 ```
 
 ## 2. Quick start
 
 ```bash
-# Production: classify bird crops every 10 min, backlog mode
-python3 app.py --source cache --input /local-cache/hummingcam-crops/top-crop-0 \
+# Production: classify crops every 10 min, backlog mode
+python3 app.py --source cache --input /local-cache/camera-crops/top-crop-0 \
   --every 10m --all-unseen --max-frames 0 --rank Species --min-confidence 0.1
 
 # Same, but full frames
-python3 app.py --source cache --input /local-cache/hummingcam/top --every 10m --all-unseen --rank Species
+python3 app.py --source cache --input /local-cache/camera/top --every 10m --all-unseen --rank Species
 
 # Local testing on a folder of images (no node/cache)
 python3 app.py --source image-dir --input ./tests/test-images --rank Species
@@ -65,7 +65,7 @@ python3 app.py --source image-dir --input ./tests/test-images --rank Species
 | `--top-k <int>` | Top-k predictions. Default `5`. |
 | `--min-confidence <float>` | Below this, treat as no-confident-prediction. Default `0.1`. |
 | `--upload-image {Y,N}` | Allow annotated uploads. Governed by `--save-match` when set. |
-| `--save-match <rules>` | OR-list of `Taxon:confidence` rules — matches the SCIENTIFIC or COMMON name of any prediction (e.g. `Ruby-throated Hummingbird:0.5`), or `*:0.5`. |
+| `--save-match <rules>` | OR-list of `Taxon:confidence` rules — matches the SCIENTIFIC or COMMON name of any prediction (e.g. `Northern Cardinal:0.5` as an example), or `*:0.5`. |
 
 ## 4. Published data
 
@@ -82,7 +82,7 @@ python3 app.py --source image-dir --input ./tests/test-images --rank Species
 **Crop provenance (when classifying a sage-yolo2 crop):** the crop's `source{}`
 block is surfaced as `source_class`, `source_confidence`, `source_unique_id` on
 the species record — so a species result traces back to the YOLO detection AND the
-parent full frame. Plain image-sampler2 frames have no `source` (full-frame mode);
+parent full frame. Plain media-sampler3 frames have no `source` (full-frame mode);
 these keys are simply absent.
 
 **Frame-anchored.** In cache mode the record timestamp is the frame's CAPTURE
@@ -114,13 +114,13 @@ sudo pluginctl run --name sage-bioclip2-consumer --selector zone=core \
   --resource limit.memory=16Gi,request.memory=4Gi \
   -v /media/plugin-data/local-cache:/local-cache \
   registry.sagecontinuum.org/beckman/sage-bioclip2:2.0.0 -- \
-  --source cache --input /local-cache/hummingcam-crops/top-crop-0 \
+  --source cache --input /local-cache/camera-crops/top-crop-0 \
   --every 10m --all-unseen --rank Species --min-confidence 0.1
 ```
 
 `--selector zone=core` is required with `-v`; `--resource limit.memory=16Gi`
 avoids OOMKill. Switch to full frames by changing one arg to
-`--input /local-cache/hummingcam/top`.
+`--input /local-cache/camera/top`.
 
 ## Contact
 

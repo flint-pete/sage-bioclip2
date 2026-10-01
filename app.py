@@ -1,15 +1,16 @@
 """
 sage-bioclip2 — BioCLIP2 Species Classifier, v2 cache-consumer architecture.
 
-Reads self-describing `-v2-` frames a producer wrote to the shared on-node
-`/local-cache`, runs BioCLIP2 (TreeOfLife) species classification on each, and
-publishes taxonomy predictions frame-anchored (observation time = capture time).
+Reads self-describing `-v2-` frames a producer (media-sampler3, THE producer for
+both images and audio) wrote to the shared on-node `/local-cache`, runs BioCLIP2
+(TreeOfLife) species classification on each, and publishes taxonomy predictions
+frame-anchored (observation time = capture time).
 
 THE SWITCH: the cache dir is a single `--input` parameter, so the same plugin
-classifies either full image-sampler2 frames OR sage-yolo2 crops with no code
+classifies either full media-sampler3 frames OR sage-yolo2 crops with no code
 change:
-  --input /local-cache/hummingcam/top             # full frames
-  --input /local-cache/hummingcam-crops/top-crop-0 # yolo2 bird crops (the cascade)
+  --input /local-cache/camera/top             # full frames
+  --input /local-cache/camera-crops/top-crop-0 # yolo2 crops (the cascade)
 Both are v2 caches; only the path differs.
 
 Architecture mirrors sage-yolo2: the cache-consumer machinery
@@ -167,12 +168,12 @@ def main():
         description="BioCLIP2 species classifier — v2 cache consumer.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""examples:
-  # Production: classify sage-yolo2 bird crops (the detect->classify cascade)
-  python3 app.py --source cache --input /local-cache/hummingcam-crops/top-crop-0 \\
+  # Production: classify sage-yolo2 crops (the detect->classify cascade)
+  python3 app.py --source cache --input /local-cache/camera-crops/top-crop-0 \\
       --every 10m --all-unseen --rank Species
 
   # Same plugin, full frames — change ONE arg:
-  python3 app.py --source cache --input /local-cache/hummingcam/top --rank Species
+  python3 app.py --source cache --input /local-cache/camera/top --rank Species
 
   # Local testing on a folder of images
   python3 app.py --source image-dir --input ./tests/test-images --rank Species
@@ -399,7 +400,7 @@ def _process_cache_wake(plugin, classifier, args, save_rules, seen,
 
 def _read_source_provenance(frame):
     """Return the crop's nested `source` dict from its UserComment JSON, or None
-    (a plain image-sampler2 frame has no `source` → full-frame mode)."""
+    (a plain media-sampler3 frame has no `source` → full-frame mode)."""
     try:
         payload = consumer._extract_usercomment_json(frame.path)
         return (payload or {}).get("source") or None

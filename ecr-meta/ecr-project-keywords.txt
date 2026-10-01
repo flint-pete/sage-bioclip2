@@ -18,5 +18,5 @@ Detect-Classify Cascade
 pywaggle2
 Frame-anchored
 TreeOfLife
-Hummingbird
+Camera Trap
 Vision-Language Model

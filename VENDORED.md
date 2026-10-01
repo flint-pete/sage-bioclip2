@@ -24,8 +24,8 @@ done
 ## Sync obligation
 
 These modules are the **v2 read contract**. sage-bioclip2 reads exactly the v2
-frames sage-yolo2 (and image-sampler2) write — including sage-yolo2 crops. If the
-v2 format changes (image-sampler2 `metadata.py` / sage-yolo2 `crop_writer.py`),
+frames sage-yolo2 (and media-sampler3) write — including sage-yolo2 crops. If the
+v2 format changes (media-sampler3 `metadata.py` / sage-yolo2 `crop_writer.py`),
 re-vendor these from sage-yolo2 and re-run `make test`. The carried-over
 `tests/test_consumer*.py` / `test_selection.py` / `test_seenstore.py` /
 `test_identity.py` are the contract guard.

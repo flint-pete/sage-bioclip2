@@ -11,9 +11,9 @@ BioCLIP-2.5 (TreeOfLife-200M), publishes `env.species.*` frame-anchored.
 
 ### The feature
 - **Full-frame ↔ crop switch is a single `--input` parameter.** Because
-  image-sampler2 frames and sage-yolo2 crops share the v2 format, the same plugin
-  classifies either the raw stream (`.../hummingcam/top`) or a crop stream
-  (`.../hummingcam-crops/top-crop-0`) with no code change — the detect→classify
+  media-sampler3 frames and sage-yolo2 crops share the v2 format, the same plugin
+  classifies either the raw stream (`.../camera/top`) or a crop stream
+  (`.../camera-crops/top-crop-0`) with no code change — the detect→classify
   cascade, mediated by the shared cache.
 
 ### Added

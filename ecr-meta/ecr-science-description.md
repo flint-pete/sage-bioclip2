@@ -22,17 +22,17 @@ The headline capability is a **two-stage vision pipeline mediated entirely by th
 shared cache**, with no plugin ever calling another:
 
 ```
-image-sampler2      sage-yolo2 (detect + crop)          sage-bioclip2 (classify)
- camera → cache  →   YOLO detects birds, crops each  →   read crops, BioCLIP2 species
- hummingcam/top      → hummingcam-crops/top-crop-<i>      → env.species.* + provenance
+media-sampler3      sage-yolo2 (detect + crop)          sage-bioclip2 (classify)
+ camera → cache  →   YOLO detects + crops each         →   read crops, BioCLIP2 species
+ camera/top          → camera-crops/top-crop-<i>         → env.species.* + provenance
 ```
 
 `sage-yolo2` detects objects and writes a cropped image of each detection into a
 crop cache stream; `sage-bioclip2` consumes those crops and identifies the
 species. Because both the raw frames and the crops are the identical self-
 describing v2 format, **the cache directory to classify is a single `--input`
-parameter** — the same plugin classifies whole frames (`.../hummingcam/top`) or
-just the crops (`.../hummingcam-crops/top-crop-0`) with no code change.
+parameter** — the same plugin classifies whole frames (`.../camera/top`) or
+just the crops (`.../camera-crops/top-crop-0`) with no code change.
 
 When classifying a crop, the crop's detection provenance (the YOLO class,
 confidence, and the parent frame's identifier) rides along on the species
@@ -90,5 +90,5 @@ sharply improves signal: it only classifies regions a detector already flagged.
 Runs on ARM64 Sage Thor / DGX Spark nodes (128 GB unified memory). The NVIDIA
 CUDA base image cannot be cross-built by the ECR portal (QEMU crash) — the plugin
 is built natively on the node and side-loaded into k3s. It runs alongside the
-image-sampler2 producer and the sage-yolo2 crop producer to form the live
+media-sampler3 producer and the sage-yolo2 crop producer to form the live
 cascade.
