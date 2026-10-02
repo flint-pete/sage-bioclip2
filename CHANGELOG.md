@@ -4,11 +4,14 @@ All notable changes to the `sage-bioclip2` Sage plugin.
 
 ## Unreleased (docs only; image stays 2.0.0)
 
-### Documented
-- **GPU now available to pods** (fleet-wide k3s `default-runtime: nvidia`, Oct 2026),
-  but bioclip2 still runs on the CPU, because `app.py` passes no `device` to
-  pybioclip. Measured on H039 with the same crop: 1.86 s on the CPU vs 0.12 s on
-  CUDA, same species and score. The README now says so.
+### Changed
+- **Runs on the GPU when available.** `app.py` now passes `device` to pybioclip's
+  `TreeOfLifeClassifier`. Previously it passed none, so pybioclip used its default,
+  `device='cpu'`, even after the fleet-wide NVIDIA-runtime fix made the GPU
+  visible. There's a new `--device {auto,cuda,cpu}` flag; the default `auto` picks
+  `cuda` when `torch.cuda.is_available()`, as sage-yolo2 does. The startup log
+  names the device. Measured on H039: 0.12 s per crop on CUDA vs 1.86 s on the
+  CPU, same result. 5 new unit tests (96 total).
 
 ### Changed (Sage adjustment; see README "Sage adjustments")
 - **Offline model loading:** the image now sets `ENV HF_HUB_OFFLINE=1`.

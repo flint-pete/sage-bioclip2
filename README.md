@@ -159,6 +159,7 @@ if that matters.
 | `--reprocess` | Ignore the seen-store (still records what it processes). |
 | `--rank <Rank>` | Kingdom/Phylum/Class/Order/Family/Genus/Species. Default `Species`. |
 | `--model <str>` | BioCLIP model string. Default `hf-hub:imageomics/bioclip-2.5-vith14`. |
+| `--device {auto,cuda,cpu}` | Where the model runs. `auto` (default) = GPU if the pod can see one, else CPU. |
 | `--top-k <int>` | Top-k predictions. Default `5`. |
 | `--min-confidence <float>` | Below this, treat as no-confident-prediction. Default `0.1`. |
 | `--upload-image {Y,N}` | Allow annotated uploads. Governed by `--save-match` when set. |
@@ -258,13 +259,12 @@ To classify full frames instead, change one argument to
 
 **Runtime notes (from the H039 fresh install, Oct 2026):**
 
-- **It always runs on the CPU, even though the pod can see the GPU.** Thor nodes
-  give pods the GPU by default (fleet-wide NVIDIA runtime, Oct 2026). But `app.py`
-  creates `TreeOfLifeClassifier(model_str=...)` without a `device`, and
-  pybioclip's default is `device='cpu'`. Measured on H039 with the same crop:
-  **1.86 s on the CPU vs 0.12 s on CUDA**, both *Cardinalis cardinalis* at 1.0.
-  Passing `device="cuda" if torch.cuda.is_available() else "cpu"` (as sage-yolo2
-  does) is an open improvement.
+- **Runs on the GPU when the pod can see one** (`--device auto`, the default).
+  Thor nodes give pods the GPU by default (fleet-wide NVIDIA runtime, Oct 2026).
+  The startup log says which device was chosen: `Loading BioCLIP2 classifier ...
+  on cuda`. `--device cpu` forces the CPU. `--device cuda` fails loudly if there
+  is no GPU, rather than quietly falling back. Measured on H039 with the same
+  crop: **0.12 s on CUDA vs 1.86 s on the CPU**, with the same species and score.
 - **No internet access needed.** The image loads the model offline (Sage
   adjustment 1 above), with zero requests to huggingface.co. Before that change,
   each start made 5 requests to check for a newer model.
