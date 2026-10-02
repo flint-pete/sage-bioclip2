@@ -21,7 +21,7 @@ camera ─▶ media-sampler3 ─▶ /local-cache/camera/top/ ─▶ sage-yolo2 �
   crops there is nothing for bioclip2 to classify.
 - **Install, restart and the big picture** live in the hub repo:
   - [install guide](https://github.com/flint-pete/media-sampler3/blob/master/INSTALLING-MEDIA-SAMPLER3.md)
-    (Steps 5, 6d and 6f)
+    (Steps 5, 6d and 6b–6f)
   - [REBOOT-RECOVERY.md](https://github.com/flint-pete/media-sampler3/blob/master/REBOOT-RECOVERY.md)
   - [HOW-IT-WORKS.md](https://github.com/flint-pete/media-sampler3/blob/master/docs/HOW-IT-WORKS.md)
 - `/local-cache` is provided and bounded by
@@ -193,7 +193,7 @@ Thor images now):
 # on the Thor node, from the repo root
 scripts/deploy-sideload.sh --skip-register     # build (arm64) → import to k3s
 
-sudo pluginctl run --name sage-bioclip2-consumer --selector zone=core \
+sudo pluginctl-nodeinfo run --name sage-bioclip2-consumer --selector zone=core \
   --resource limit.memory=16Gi,request.memory=4Gi \
   -v /media/plugin-data/local-cache:/local-cache \
   -e WAGGLE_JOB_NAME=camera -e WAGGLE_TASK_NAME=sage-bioclip2 \
@@ -202,12 +202,11 @@ sudo pluginctl run --name sage-bioclip2-consumer --selector zone=core \
   --every 10m --all-unseen --max-frames 0 --rank Species --min-confidence 0.1
 ```
 
-> **Pod identity.** Launched with the stock `pluginctl`, the pod has no
-> `WAGGLE_NODE_*` env, so identity comes only from each frame's EXIF: no
-> cross-check, and no node-GPS fallback. Launch with the patched
-> `~/bin/pluginctl-nodeinfo` instead (same flags; wes-nodeinfo-injection Tier 1b),
-> and the pod gets the node's VSN, id and GPS. Records then carry lat/lon even when
-> the frame has none (`location_source: node`). Verified on H039, Oct 2026.
+> **Pod identity.** `pluginctl-nodeinfo` is the patched `pluginctl` from install
+> Step 3 (same flags). Its pods get the node's VSN, id and GPS, which the consumer
+> uses as a cross-check and a GPS fallback, so records carry lat/lon even when
+> the frame has none (`location_source: node`). With the stock `pluginctl`, the
+> pod has no identity env and only the frame's EXIF counts. Verified on H039, Oct 2026.
 
 This is the same command as the install guide's Step 6d.
 
