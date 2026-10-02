@@ -8,8 +8,8 @@ time = the moment the photo was taken).
 
 ## Where this fits
 
-sage-bioclip2 is the second **test consumer** in the media-sampler3 stack. It is
-the last stage of the cascade:
+sage-bioclip2 is the second of three **test consumers** in the media-sampler3 stack
+(the third, sage-birdnet2, handles audio). It is the last stage of the image cascade:
 
 ```
 camera ─▶ media-sampler3 ─▶ /local-cache/camera/top/ ─▶ sage-yolo2 ─▶ /local-cache/camera-crops/top-crop-N/ ─▶ sage-bioclip2 ─▶ env.species.* ─▶ Beehive
@@ -21,7 +21,7 @@ camera ─▶ media-sampler3 ─▶ /local-cache/camera/top/ ─▶ sage-yolo2 �
   crops there is nothing for bioclip2 to classify.
 - **Install, restart and the big picture** live in the hub repo:
   - [install guide](https://github.com/flint-pete/media-sampler3/blob/master/INSTALLING-MEDIA-SAMPLER3.md)
-    (Steps 5, 6d and 6b–6f)
+    (Step 5 to build; Steps 6b–6g to run and test)
   - [REBOOT-RECOVERY.md](https://github.com/flint-pete/media-sampler3/blob/master/REBOOT-RECOVERY.md)
   - [HOW-IT-WORKS.md](https://github.com/flint-pete/media-sampler3/blob/master/docs/HOW-IT-WORKS.md)
 - `/local-cache` is provided and bounded by

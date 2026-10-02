@@ -5,6 +5,7 @@ All notable changes to the `sage-bioclip2` Sage plugin.
 ## Unreleased (docs only; image stays 2.0.0)
 
 ### Changed
+- README: three test consumers; step references follow the install guide.
 - README: pod-identity note. Launching with the patched `pluginctl-nodeinfo`
   (wes-nodeinfo-injection Tier 1b) gives the pod `WAGGLE_NODE_*`, enabling the
   cross-check and the node-GPS fallback.
