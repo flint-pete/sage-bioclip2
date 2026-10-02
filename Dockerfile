@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Fresh opencv-headless matching the current numpy (base may ship a mismatched one).
 RUN pip uninstall -y opencv-python opencv-python-headless 2>/dev/null; \
     rm -rf /usr/local/lib/python3.*/dist-packages/cv2* && \
-    pip install --no-cache-dir -c /tmp/constraints.txt opencv-python-headless>=4.8.0
+    pip install --no-cache-dir -c /tmp/constraints.txt "opencv-python-headless==4.11.0.86"
 
 # Enable BioCLIP-2.5 ViT-H/14 in pybioclip 2.1.5 (patches library internals).
 # Applied ONCE here at build time — the patch is not idempotent, so app.py must
@@ -35,6 +35,15 @@ RUN python3 /tmp/patch_pybioclip.py && rm /tmp/patch_pybioclip.py
 RUN python3 -c "\
 from bioclip.predict import TreeOfLifeClassifier; \
 TreeOfLifeClassifier(model_str='hf-hub:imageomics/bioclip-2.5-vith14')"
+
+# --- Sage adjustment (not in upstream pybioclip) -------------------------------
+# The model weights, config and taxonomy embeddings are now in the image's Hugging
+# Face cache (the RUN above). Without this setting, huggingface_hub still makes HEAD
+# requests to huggingface.co at every start-up to check for newer files. On a Sage
+# node with no outbound internet that can stall or fail start-up. Offline mode makes
+# it load only from the baked-in cache. To re-enable online checks for one run:
+#   pluginctl run ... -e HF_HUB_OFFLINE=0 ...
+ENV HF_HUB_OFFLINE=1
 
 COPY save_match.py .
 COPY consumer.py .
