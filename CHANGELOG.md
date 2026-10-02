@@ -4,6 +4,22 @@ All notable changes to the `sage-bioclip2` Sage plugin.
 
 ## Unreleased (docs only; image stays 2.0.0)
 
+### Changed (Sage adjustment; see README "Sage adjustments")
+- **Offline model loading:** the image now sets `ENV HF_HUB_OFFLINE=1`.
+  - Before: 5 HEAD requests to huggingface.co at every start, resolving `main`, so
+    the model could change without notice.
+  - Now: 0 requests.
+  - Verified on H039, including with networking switched off (`--network none`).
+    Override with `-e HF_HUB_OFFLINE=0`.
+- **Pinned dependencies** to the versions verified on H039: `pywaggle[all]==0.56.3`,
+  `open_clip_torch==3.3.0`, `huggingface_hub==2.1.1`, `timm==1.0.30`,
+  `opencv-python-headless==4.11.0.86`, `pillow==11.3.0`, `piexif==1.1.3`,
+  `numpy==1.26.4`.
+- **Dockerfile:** the opencv reinstall used an unquoted `opencv-python-headless>=4.8.0`.
+  The shell read `>=4.8.0` as an output redirect, so pip installed the newest
+  opencv. It's now quoted and pinned.
+- **README:** removed the incorrect claim that the pod needs outbound network.
+
 ### Changed
 - README: three test consumers; step references follow the install guide.
 - README: pod-identity note. Launching with the patched `pluginctl-nodeinfo`

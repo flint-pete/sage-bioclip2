@@ -34,14 +34,51 @@ TreeOfLife-200M dataset. bioclip2 compares an image against precomputed text
 embeddings for every taxon in the tree of life and returns the best matches at
 the chosen rank (`--rank Species` by default).
 
-- **Why `patch_pybioclip.py` exists.** The `pybioclip` 2.1.5 library only knows
-  BioCLIP 1 and 2. At image-build time this script adds the 2.5 model string and
-  its embedding filenames to pybioclip's internals. It's applied once in the
-  `Dockerfile`, and running it a second time isn't supported.
 - **The model is baked into the image.** The Dockerfile instantiates the
   classifier at build time, which downloads the model and the TreeOfLife
-  embeddings. So the image is about 17 GB, and the pod needs **no network at
-  runtime**.
+  embeddings. That's why the image is about 17 GB.
+
+### Sage adjustments to upstream BioCLIP / pybioclip
+
+> **These are changes we made for Sage. They aren't in upstream BioCLIP or
+> pybioclip.** If you compare against upstream examples, or upgrade pybioclip,
+> start here.
+
+1. **Offline model loading: `ENV HF_HUB_OFFLINE=1` in the `Dockerfile`** (added
+   Oct 2026).
+   - **What upstream does.** pybioclip loads its model through open_clip and
+     huggingface_hub. Even when the files are already cached, those libraries
+     contact huggingface.co at every start-up. The old image did this: on H039 it
+     made 5 HEAD requests per start, each asking for the **latest** (`main`)
+     version of the model and the TreeOfLife embeddings.
+   - **Why that's wrong for a Sage node:**
+     - **The model could change without anyone noticing.** If the upstream model
+       repository is updated, a pod with internet access would download the new
+       files (about 5 GB) when it next starts. It would then run a different
+       model from the one this image was built and tested with.
+     - **Start-up can stall** on a network that silently drops traffic, waiting on
+       each request's timeout.
+     - **It depends on huggingface.co** being reachable and not rate-limiting
+       unauthenticated requests.
+   - **What we changed.** `HF_HUB_OFFLINE=1` makes huggingface_hub use only the
+     files baked into the image.
+   - **Verified on H039:**
+     - the new image makes **0** requests at start-up;
+     - it classified the seeded cardinal (*Cardinalis cardinalis*, 100%);
+     - it works with networking switched off entirely (`docker run --network none`).
+   - **To turn the online checks back on** (for example, when testing a newer
+     model): `-e HF_HUB_OFFLINE=0`. To actually change the model version,
+     rebuild the image.
+2. **BioCLIP-2.5 support: `patch_pybioclip.py`.** pybioclip 2.1.5 only knows
+   BioCLIP 1 and 2. At image-build time this script adds the 2.5 model string
+   and its embedding filenames to pybioclip's internals. The Dockerfile applies it
+   once, and running it a second time isn't supported. **Remove it when upstream
+   pybioclip supports 2.5.**
+3. **Pinned library versions: `requirements.txt`.** pybioclip, plus the libraries
+   it uses to load the model (`open_clip_torch`, `huggingface_hub`, `timm`), are
+   pinned to the versions that built and ran on H039. The offline loading in (1)
+   depends on how those libraries behave, so change them together, rebuild, and
+   re-run the install guide's seeded test.
 
 **Code map**
 
@@ -227,8 +264,9 @@ To classify full frames instead, change one argument to
   on H039. Passing `device="cuda" if torch.cuda.is_available() else "cpu"` (as
   sage-yolo2 does) is an open improvement. Separately, on nodes like H039 the pod
   couldn't see the GPU anyway (see the hub guide, Step 6c, "Is it using the GPU?").
-- At startup, open_clip makes a few HEAD requests to `huggingface.co`, even though
-  the weights are baked into the image. So the pod needs outbound network access.
+- **No internet access needed.** The image loads the model offline (Sage
+  adjustment 1 above), with zero requests to huggingface.co. Before that change,
+  each start made 5 requests to check for a newer model.
 
 ## Docs in this repo
 
