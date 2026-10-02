@@ -5,6 +5,9 @@ All notable changes to the `sage-bioclip2` Sage plugin.
 ## Unreleased (docs only; image stays 2.0.0)
 
 ### Changed
+- README runtime notes (from the H039 fresh install): bioclip2 always runs on the
+  CPU (pybioclip's default `device='cpu'`; passing a device is an open improvement),
+  and it contacts huggingface.co at start-up.
 - ECR note: the cyberinfrastructure team fixed the ECR build for Thor (arm64,
   including CUDA bases), so current docs no longer say ECR can't build this
   image. The image just hasn't been published yet; side-load stays the verified

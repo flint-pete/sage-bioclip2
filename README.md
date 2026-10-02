@@ -213,6 +213,17 @@ This is the same command as the install guide's Step 6d.
 To classify full frames instead, change one argument to
 `--input /local-cache/camera/top`.
 
+**Runtime notes (from the H039 fresh install, Oct 2026):**
+
+- **It always runs on the CPU.** `app.py` creates `TreeOfLifeClassifier(model_str=...)`
+  without a `device`, and pybioclip's default is `device='cpu'`, so the GPU is never
+  used, even on a node where the pod can see one. Classifying one crop took about 1 s
+  on H039. Passing `device="cuda" if torch.cuda.is_available() else "cpu"` (as
+  sage-yolo2 does) is an open improvement. Separately, on nodes like H039 the pod
+  couldn't see the GPU anyway (see the hub guide, Step 6c, "Is it using the GPU?").
+- At startup, open_clip makes a few HEAD requests to `huggingface.co`, even though
+  the weights are baked into the image. So the pod needs outbound network access.
+
 ## Docs in this repo
 
 - `VENDORED.md`: which files are copied from sage-yolo2, and what must stay in sync.
