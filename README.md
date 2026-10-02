@@ -202,6 +202,13 @@ sudo pluginctl run --name sage-bioclip2-consumer --selector zone=core \
   --every 10m --all-unseen --max-frames 0 --rank Species --min-confidence 0.1
 ```
 
+> **Pod identity.** Launched with the stock `pluginctl`, the pod has no
+> `WAGGLE_NODE_*` env, so identity comes only from each frame's EXIF: no
+> cross-check, and no node-GPS fallback. Launch with the patched
+> `~/bin/pluginctl-nodeinfo` instead (same flags; wes-nodeinfo-injection Tier 1b),
+> and the pod gets the node's VSN, id and GPS. Records then carry lat/lon even when
+> the frame has none (`location_source: node`). Verified on H039, Oct 2026.
+
 This is the same command as the install guide's Step 6d.
 
 - `--selector zone=core` is required whenever you use `-v`.

@@ -5,6 +5,9 @@ All notable changes to the `sage-bioclip2` Sage plugin.
 ## Unreleased (docs only; image stays 2.0.0)
 
 ### Changed
+- README: pod-identity note. Launching with the patched `pluginctl-nodeinfo`
+  (wes-nodeinfo-injection Tier 1b) gives the pod `WAGGLE_NODE_*`, enabling the
+  cross-check and the node-GPS fallback.
 - README runtime notes (from the H039 fresh install): bioclip2 always runs on the
   CPU (pybioclip's default `device='cpu'`; passing a device is an open improvement),
   and it contacts huggingface.co at start-up.
