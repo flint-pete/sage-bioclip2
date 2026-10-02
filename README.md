@@ -235,7 +235,7 @@ sudo pluginctl-nodeinfo run --name sage-bioclip2-consumer --selector zone=core \
   --resource limit.memory=16Gi,request.memory=4Gi \
   -v /media/plugin-data/local-cache:/local-cache \
   -e WAGGLE_JOB_NAME=camera -e WAGGLE_TASK_NAME=sage-bioclip2 \
-  registry.sagecontinuum.org/beckman/sage-bioclip2:2.0.0 -- \
+  registry.sagecontinuum.org/beckman/sage-bioclip2:2.1.0 -- \
   --source cache --input /local-cache/camera-crops/top-crop-0 \
   --every 10m --all-unseen --max-frames 0 --rank Species --min-confidence 0.1
 ```

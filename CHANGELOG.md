@@ -2,7 +2,7 @@
 
 All notable changes to the `sage-bioclip2` Sage plugin.
 
-## Unreleased (docs only; image stays 2.0.0)
+## 2.1.0 — 2026-10-02
 
 ### Changed
 - **Runs on the GPU when available.** `app.py` now passes `device` to pybioclip's

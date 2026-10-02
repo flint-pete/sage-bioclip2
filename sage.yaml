@@ -1,6 +1,6 @@
 name: "sage-bioclip2"
 namespace: "beckman"
-version: "2.0.0"
+version: "2.1.0"
 description: "BioCLIP2 species classifier, re-architected as a pywaggle2 cache consumer — reads self-describing -v2- frames a producer (media-sampler3, THE producer for images and audio) wrote to the shared on-node cache and runs BioCLIP-2.5 (TreeOfLife-200M) taxonomy classification frame-anchored (observation time = capture time). The cache dir is a single --input parameter, so the SAME plugin classifies either full media-sampler3 frames OR sage-yolo2 crops (the detect→classify cascade) with no code change. When classifying a crop, the crop's YOLO provenance is attached to the species record for full traceability."
 authors: "Pete Beckman"
 collaborators: "Sage Team"
