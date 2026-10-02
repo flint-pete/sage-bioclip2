@@ -87,8 +87,8 @@ sharply improves signal: it only classifies regions a detector already flagged.
 
 ## Deployment
 
-Runs on ARM64 Sage Thor / DGX Spark nodes (128 GB unified memory). The NVIDIA
-CUDA base image cannot be cross-built by the ECR portal (QEMU crash) — the plugin
-is built natively on the node and side-loaded into k3s. It runs alongside the
+Runs on ARM64 Sage Thor / DGX Spark nodes (128 GB unified memory). The verified
+development path builds the image natively on the node and side-loads it into
+k3s; the ECR portal can also build it for Thor. It runs alongside the
 media-sampler3 producer and the sage-yolo2 crop producer to form the live
 cascade.

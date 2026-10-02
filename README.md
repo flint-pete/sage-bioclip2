@@ -185,8 +185,9 @@ BioCLIP inference is verified on-node.
 
 ## 7. Deployment
 
-ECR portal build fails for this plugin (NVIDIA CUDA base + QEMU cross-build,
-Infra #3). Working path = native Thor build + k3s side-load + `pluginctl run`:
+The image hasn't been published to the registry yet, so the verified path is a
+native Thor build + k3s side-load + `pluginctl run` (the ECR portal can also build
+Thor images now):
 
 ```bash
 # on the Thor node, from the repo root

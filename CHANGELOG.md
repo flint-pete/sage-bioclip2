@@ -5,6 +5,10 @@ All notable changes to the `sage-bioclip2` Sage plugin.
 ## Unreleased (docs only; image stays 2.0.0)
 
 ### Changed
+- ECR note: the cyberinfrastructure team fixed the ECR build for Thor (arm64,
+  including CUDA bases), so current docs no longer say ECR can't build this
+  image. The image just hasn't been published yet; side-load stays the verified
+  dev path. The QEMU notes in older entries below are historical.
 - **Student-readiness README pass:**
   - added "Where this fits", prerequisites, what BioCLIP-2.5 is, why
     `patch_pybioclip.py` exists, and a code map
