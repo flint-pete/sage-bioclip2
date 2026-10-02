@@ -258,12 +258,13 @@ To classify full frames instead, change one argument to
 
 **Runtime notes (from the H039 fresh install, Oct 2026):**
 
-- **It always runs on the CPU.** `app.py` creates `TreeOfLifeClassifier(model_str=...)`
-  without a `device`, and pybioclip's default is `device='cpu'`, so the GPU is never
-  used, even on a node where the pod can see one. Classifying one crop took about 1 s
-  on H039. Passing `device="cuda" if torch.cuda.is_available() else "cpu"` (as
-  sage-yolo2 does) is an open improvement. Separately, on nodes like H039 the pod
-  couldn't see the GPU anyway (see the hub guide, Step 6c, "Is it using the GPU?").
+- **It always runs on the CPU, even though the pod can see the GPU.** Thor nodes
+  give pods the GPU by default (fleet-wide NVIDIA runtime, Oct 2026). But `app.py`
+  creates `TreeOfLifeClassifier(model_str=...)` without a `device`, and
+  pybioclip's default is `device='cpu'`. Measured on H039 with the same crop:
+  **1.86 s on the CPU vs 0.12 s on CUDA**, both *Cardinalis cardinalis* at 1.0.
+  Passing `device="cuda" if torch.cuda.is_available() else "cpu"` (as sage-yolo2
+  does) is an open improvement.
 - **No internet access needed.** The image loads the model offline (Sage
   adjustment 1 above), with zero requests to huggingface.co. Before that change,
   each start made 5 requests to check for a newer model.

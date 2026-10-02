@@ -4,6 +4,12 @@ All notable changes to the `sage-bioclip2` Sage plugin.
 
 ## Unreleased (docs only; image stays 2.0.0)
 
+### Documented
+- **GPU now available to pods** (fleet-wide k3s `default-runtime: nvidia`, Oct 2026),
+  but bioclip2 still runs on the CPU, because `app.py` passes no `device` to
+  pybioclip. Measured on H039 with the same crop: 1.86 s on the CPU vs 0.12 s on
+  CUDA, same species and score. The README now says so.
+
 ### Changed (Sage adjustment; see README "Sage adjustments")
 - **Offline model loading:** the image now sets `ENV HF_HUB_OFFLINE=1`.
   - Before: 5 HEAD requests to huggingface.co at every start, resolving `main`, so
