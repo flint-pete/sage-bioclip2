@@ -219,3 +219,50 @@ def test_save_match_on_common_name(tmp_path):
     app._maybe_upload(p, Args(upload_image="N"), StubClassifier().preds, frame,
                       timestamp=1, camera="top", save_rules=rules)
     assert len(p.uploads) == 1                     # matched on common name
+
+
+# ── device selection (GPU when the pod can see one) ───────────────────────────
+def _fake_torch(monkeypatch, cuda):
+    torch = types.ModuleType("torch")
+    torch.cuda = types.SimpleNamespace(is_available=lambda: cuda)
+    monkeypatch.setitem(sys.modules, "torch", torch)
+
+
+def test_resolve_device_auto_picks_cuda_when_available(monkeypatch):
+    _fake_torch(monkeypatch, True)
+    assert app.resolve_device("auto") == "cuda"
+
+
+def test_resolve_device_auto_falls_back_to_cpu(monkeypatch):
+    _fake_torch(monkeypatch, False)
+    assert app.resolve_device("auto") == "cpu"
+
+
+def test_resolve_device_explicit_is_honoured(monkeypatch):
+    _fake_torch(monkeypatch, False)
+    assert app.resolve_device("cuda") == "cuda"
+    assert app.resolve_device("cpu") == "cpu"
+
+
+def test_classifier_passes_device_to_pybioclip(monkeypatch):
+    _fake_torch(monkeypatch, True)
+    seen = {}
+
+    class FakeTOL:
+        def __init__(self, model_str, device="cpu"):
+            seen["model_str"], seen["device"] = model_str, device
+
+    bioclip = types.ModuleType("bioclip")
+    bioclip.Rank = types.SimpleNamespace(SPECIES="SPECIES")
+    predict = types.ModuleType("bioclip.predict")
+    predict.TreeOfLifeClassifier = FakeTOL
+    monkeypatch.setitem(sys.modules, "bioclip", bioclip)
+    monkeypatch.setitem(sys.modules, "bioclip.predict", predict)
+    c = app.BioCLIP2Classifier(rank="Species")
+    c.load()
+    assert seen["device"] == "cuda" and c.device == "cuda"
+
+
+def test_invalid_device_rejected():
+    with pytest.raises(ValueError):
+        app.BioCLIP2Classifier(device="tpu")

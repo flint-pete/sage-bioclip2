@@ -53,6 +53,19 @@ RANK_NAMES = ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species
 
 # ── BioCLIP2 classifier (grafted from sage-bioclip v1) ────────────────────────
 
+def resolve_device(request="auto"):
+    """'auto' -> 'cuda' when the pod can see a GPU, else 'cpu'. 'cuda'/'cpu' are honoured
+    as given ('cuda' with no GPU fails loudly at model load rather than silently
+    falling back). torch is imported lazily so offline unit tests don't need it."""
+    if request != "auto":
+        return request
+    try:
+        import torch
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    except Exception:  # torch missing or broken -> CPU
+        return "cpu"
+
+
 class BioCLIP2Classifier:
     """BioCLIP2 species classifier. Uses pybioclip's TreeOfLifeClassifier.
 
@@ -61,11 +74,16 @@ class BioCLIP2Classifier:
     offline unit tests) import without the GPU stack present.
     """
 
-    def __init__(self, rank="Species", model_str="hf-hub:imageomics/bioclip-2.5-vith14"):
+    def __init__(self, rank="Species", model_str="hf-hub:imageomics/bioclip-2.5-vith14",
+                 device="auto"):
         if rank not in RANK_NAMES:
             raise ValueError(f"Invalid rank '{rank}'. Must be one of: {RANK_NAMES}")
+        if device not in ("auto", "cuda", "cpu"):
+            raise ValueError(f"Invalid device '{device}'. Must be auto, cuda or cpu")
         self.rank = rank
         self.model_str = model_str
+        self.device_request = device
+        self.device = None
         self.classifier = None
         self._rank_enum = None
 
@@ -77,10 +95,13 @@ class BioCLIP2Classifier:
         from bioclip import Rank
         from bioclip.predict import TreeOfLifeClassifier
         self._rank_enum = getattr(Rank, self.rank.upper())
-        logger.info("Loading BioCLIP2 classifier (model=%s, rank=%s)...",
-                    self.model_str, self.rank)
-        self.classifier = TreeOfLifeClassifier(model_str=self.model_str)
-        logger.info("BioCLIP2 classifier loaded")
+        self.device = resolve_device(self.device_request)
+        logger.info("Loading BioCLIP2 classifier (model=%s, rank=%s) on %s...",
+                    self.model_str, self.rank, self.device)
+        # pybioclip's own default is device='cpu', so pass it explicitly (as sage-yolo2
+        # does for YOLO): the GPU is ~15x faster per crop on a Thor (H039, Oct 2026).
+        self.classifier = TreeOfLifeClassifier(model_str=self.model_str, device=self.device)
+        logger.info("BioCLIP2 classifier loaded on %s", self.device)
 
     def classify(self, image, top_k=5):
         """Classify a PIL image at the configured rank.
@@ -206,6 +227,8 @@ def main():
                         help="Taxonomic rank to predict. Default Species.")
     parser.add_argument("--model", default="hf-hub:imageomics/bioclip-2.5-vith14",
                         help="BioCLIP model string.")
+    parser.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"],
+                        help="Where to run the model: auto = GPU if the pod can see one, else CPU.")
     parser.add_argument("--top-k", type=int, default=5, help="Top-k predictions.")
     parser.add_argument("--min-confidence", type=float, default=0.1,
                         help="Below this, treat as no-confident-prediction.")
@@ -230,7 +253,7 @@ def main():
         logger.error("Invalid duration: %s", e)
         raise SystemExit(2)
 
-    classifier = BioCLIP2Classifier(rank=args.rank, model_str=args.model)
+    classifier = BioCLIP2Classifier(rank=args.rank, model_str=args.model, device=args.device)
 
     is_cache = args.source == "cache"
     is_image_dir = args.source == "image-dir"
