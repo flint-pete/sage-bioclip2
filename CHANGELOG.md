@@ -2,6 +2,24 @@
 
 All notable changes to the `sage-bioclip2` Sage plugin.
 
+## 2.2.0 — 2026-11-10
+
+### Changed
+- **Node identity now comes from upstream pywaggle.** The CI team merged our
+  pywaggle2-nodeinfo reader into pywaggle (0.57.0/0.57.1) and the `wes-identity`
+  injection into SES 0.29.2 / WES 697e338. `consumer.get_node_info()` now imports
+  `waggle.data.node_info_env.read_node_info`; `requirements.txt` pins
+  `pywaggle==0.57.1` (0.57.0 still imports numpy on that path).
+- New test: upstream WES writes `""` (not 999) for missing coords -> `None`.
+- Run commands use the stock `sudo pluginctl run`: on WES 697e338+ its pods get the
+  node identity/GPS without our patched `pluginctl-nodeinfo` (retired).
+
+### Removed
+- The vendored `node_info.py` (and its Dockerfile `COPY`).
+
+### Pending verification
+- On-node run on **H019** (new test node; H00F's cameras were retasked).
+
 ## 2.1.0 — 2026-10-02
 
 ### Changed

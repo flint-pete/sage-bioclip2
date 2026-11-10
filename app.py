@@ -14,7 +14,7 @@ change:
 Both are v2 caches; only the path differs.
 
 Architecture mirrors sage-yolo2: the cache-consumer machinery
-(consumer/selection/seenstore/node_info) is vendored byte-identical from
+(consumer/selection/seenstore) is vendored byte-identical from
 sage-yolo2 — see VENDORED.md. This file is the bioclip-specific brains.
 
 Measurement topics:

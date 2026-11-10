@@ -49,7 +49,6 @@ COPY save_match.py .
 COPY consumer.py .
 COPY selection.py .
 COPY seenstore.py .
-COPY node_info.py .
 COPY app.py .
 
 ENTRYPOINT ["python3", "/app/app.py"]

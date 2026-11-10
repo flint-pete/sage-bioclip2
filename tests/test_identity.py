@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for node identity + cross-check (Stage 3).
 
-Covers the vendored pywaggle2 reader (node_info.py) sentinel normalization and
+Covers pywaggle's node-identity reader (waggle.data.node_info_env, pywaggle>=0.57.1)
+sentinel normalization and
 consumer.resolve_identity() -- the frame-authoritative attribution with pod
 cross-check, vsn-mismatch warning, GPS frame->node fallback, and never-fabricate.
 """
@@ -13,14 +14,14 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import consumer  # noqa: E402
-from node_info import read_node_info, NodeInfo  # noqa: E402
+from waggle.data.node_info_env import read_node_info, NodeInfo  # noqa: E402
 
 
 def _fm(vsn=None, node_id=None, lat=None, lon=None):
     return consumer.FrameMeta(100, vsn=vsn, node_id=node_id, lat=lat, lon=lon)
 
 
-# --- vendored reader: sentinel normalization (contract parity) ---------------
+# --- upstream reader: sentinel normalization (contract parity) ---------------
 
 def test_reader_empty_env_all_none():
     ni = read_node_info(env={})
@@ -45,6 +46,14 @@ def test_reader_real_values():
 def test_reader_gps_999_sentinel_by_range():
     ni = read_node_info(env={"WAGGLE_NODE_GPS_LAT": "999", "WAGGLE_NODE_GPS_LON": "999"})
     assert ni.lat is None and ni.lon is None
+
+
+def test_empty_gps_from_upstream_wes_is_none():
+    # waggle-edge-stack >= 697e338 writes "" (not 999) when the manifest has no coords
+    ni = read_node_info(env={"WAGGLE_NODE_VSN": "H019", "WAGGLE_NODE_GPS_LAT": "",
+                             "WAGGLE_NODE_GPS_LON": ""})
+    assert ni.vsn == "H019" and ni.lat is None and ni.lon is None
+    assert ni.mobility == "unknown"   # upstream WES does not emit WAGGLE_NODE_MOBILITY
 
 
 def test_reader_signed_southern_western():

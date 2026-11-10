@@ -9,14 +9,17 @@ second consumer of the same contract, so it reuses the same read-side machinery.
 | `consumer.py` | sage-yolo2 (byte-identical) | v2 cache read: scan/parse/newest, EXIF+UserComment metadata, identity resolution |
 | `selection.py` | sage-yolo2 (byte-identical) | frame selection (stride / all-unseen / newest), duration parsing |
 | `seenstore.py` | sage-yolo2 (byte-identical) | dedup memory (seen unique_ids), bounded, restart-durable |
-| `node_info.py` | sage-yolo2 (byte-identical) | pod self-identity from WAGGLE_NODE_* env (itself vendored from pywaggle2-nodeinfo) |
 | `save_match.py` | sage-yolo2 (byte-identical; also identical in sage-bioclip v1) | `Class:confidence` OR-rule parsing + matching |
+
+Node identity is **no longer vendored**: since v2.2.0 `consumer.get_node_info()` imports
+`waggle.data.node_info_env.read_node_info` from pywaggle (>= 0.57.1, pinned in
+`requirements.txt`), where the CI team merged the pywaggle2-nodeinfo reader (Nov 2026).
 
 ## Verify byte-identity
 
 ```sh
 Y=../sage-yolo2
-for m in consumer.py selection.py seenstore.py node_info.py save_match.py; do
+for m in consumer.py selection.py seenstore.py save_match.py; do
   diff "$m" "$Y/$m" && echo "$m: identical" || echo "$m: DRIFT"
 done
 ```

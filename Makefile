@@ -14,10 +14,10 @@ PY   := $(VENV)/bin/python
 test: $(VENV)/.stamp
 	$(PY) -m pytest -q tests/test_consumer.py tests/test_consumer_meta.py tests/test_selection.py tests/test_seenstore.py tests/test_identity.py tests/test_app_bioclip.py
 
-$(VENV)/.stamp:
+$(VENV)/.stamp: Makefile
 	python3 -m venv $(VENV)
 	$(PY) -m pip install --quiet --upgrade pip
-	$(PY) -m pip install --quiet pytest Pillow piexif numpy
+	$(PY) -m pip install --quiet pytest Pillow piexif numpy pywaggle==0.57.1
 	touch $@
 
 clean:

@@ -3,7 +3,7 @@
 # This happened to sage-birdnet2 when birdnet 1.x dropped TensorFlow.
 # To upgrade: change a pin, rebuild, and re-run the install guide's seeded test (Step 6).
 # torch/torchvision/numpy are locked to the NVIDIA base image by the Dockerfile.
-pywaggle[all]==0.56.3
+pywaggle[all]==0.57.1   # Nov 2026: adds waggle.data.node_info_env; on-node verification pending (H019). 0.57.0 still imports numpy there.
 pybioclip==2.1.5
 # pybioclip's model-loading stack, pinned too (the offline mode depends on it):
 open_clip_torch==3.3.0

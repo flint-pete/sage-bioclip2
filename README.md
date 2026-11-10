@@ -85,7 +85,7 @@ the chosen rank (`--rank Species` by default).
 | File | What it does |
 |---|---|
 | `app.py` | CLI, wake loop, `BioCLIP2Classifier` (pybioclip `TreeOfLifeClassifier` wrapper), publishing and provenance |
-| `consumer.py`, `selection.py`, `seenstore.py`, `node_info.py`, `save_match.py` | Cache-consumer machinery copied (vendored) unchanged from sage-yolo2 (see `VENDORED.md`) |
+| `consumer.py`, `selection.py`, `seenstore.py`, `save_match.py` | Cache-consumer machinery copied (vendored) unchanged from sage-yolo2 (see `VENDORED.md`) |
 | `patch_pybioclip.py` | Build-time patch that enables BioCLIP-2.5 in pybioclip |
 | `scripts/deploy-sideload.sh` | Native Thor build plus k3s import (identical to sage-yolo2's) |
 
@@ -202,7 +202,7 @@ time (read from its metadata), not when BioCLIP ran.
 ## 5. Architecture / reuse
 
 The cache-consumer machinery (`consumer.py`, `selection.py`, `seenstore.py`,
-`node_info.py`, `save_match.py`) is **copied unchanged from sage-yolo2**. It is the
+`save_match.py`) is **copied unchanged from sage-yolo2**. Pod identity comes from pywaggle (>= 0.57.1) `waggle.data.node_info_env`. It is the
 shared v2 read contract; see `VENDORED.md`. The BioCLIP2-specific parts
 (`BioCLIP2Classifier`, `patch_pybioclip.py`) were carried over from
 `sage-bioclip` v1.
@@ -231,20 +231,21 @@ Thor images now):
 # on the Thor node, from the repo root
 scripts/deploy-sideload.sh --skip-register     # build (arm64) → import to k3s
 
-sudo pluginctl-nodeinfo run --name sage-bioclip2-consumer --selector zone=core \
+sudo pluginctl run --name sage-bioclip2-consumer --selector zone=core \
   --resource limit.memory=16Gi,request.memory=4Gi \
   -v /media/plugin-data/local-cache:/local-cache \
   -e WAGGLE_JOB_NAME=camera -e WAGGLE_TASK_NAME=sage-bioclip2 \
-  registry.sagecontinuum.org/beckman/sage-bioclip2:2.1.0 -- \
+  registry.sagecontinuum.org/beckman/sage-bioclip2:2.2.0 -- \
   --source cache --input /local-cache/camera-crops/top-crop-0 \
   --every 10m --all-unseen --max-frames 0 --rank Species --min-confidence 0.1
 ```
 
-> **Pod identity.** `pluginctl-nodeinfo` is the patched `pluginctl` from install
-> Step 3 (same flags). Its pods get the node's VSN, id and GPS, which the consumer
-> uses as a cross-check and a GPS fallback, so records carry lat/lon even when
-> the frame has none (`location_source: node`). With the stock `pluginctl`, the
-> pod has no identity env and only the frame's EXIF counts. Verified on H039, Oct 2026.
+> **Pod identity.** On a node running WES 697e338 or later (pluginctl >= 0.29.2),
+> every pod — `pluginctl run` and scheduled jobs alike — gets the node's VSN, id and GPS
+> from the `wes-identity` ConfigMap. The consumer uses them as a cross-check and a GPS
+> fallback, so records carry lat/lon even when the frame has none (`location_source: node`).
+> On an older node the pod has no identity env and only the frame's EXIF counts.
+> (Until Nov 2026 this needed our patched `pluginctl-nodeinfo`; that is now retired.)
 
 This is the same command as the install guide's Step 6d.
 

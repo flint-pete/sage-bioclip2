@@ -289,7 +289,7 @@ def read_frame_metadata(frame):
 #   * the FRAME's captured identity (FrameMeta from the UserComment JSON) -- what the
 #     pixels actually correspond to; AUTHORITATIVE for attribution (V2-Design §7.1.3).
 #   * the POD's own identity via get_node_info() (the WES-injected WAGGLE_NODE_* env,
-#     read by the vendored pywaggle2 reader) -- the node sage-yolo2 is running on.
+#     read by pywaggle's waggle.data.node_info_env) -- the node sage-yolo2 is running on.
 # On a correctly-configured node these agree. We attribute with the frame's identity,
 # cross-check against the pod's, warn on a vsn mismatch (stale/mislabeled cache), and
 # fall back to the pod identity only for fields the frame lacks. Location is NEVER
@@ -322,15 +322,18 @@ class Identity:
 
 
 def get_node_info():
-    """The pod's own WES-injected identity via the vendored pywaggle2 reader.
+    """The pod's own WES-injected identity via pywaggle's reader
+    (``waggle.data.node_info_env.read_node_info``, pywaggle >= 0.57.1).
 
-    Returns a NodeInfo (sentinel-normalized) or None if the reader is unavailable.
-    Fail-soft: a missing reader must not stop inference.
+    Returns a NodeInfo (sentinel-normalized) or None if the reader is unavailable
+    (e.g. an older pywaggle off-node). Fail-soft: a missing reader must not stop
+    inference -- attribution then comes from the frame alone.
     """
     try:
-        from node_info import read_node_info
-    except ImportError:                       # pragma: no cover - vendored in-repo
-        logger.warning("node_info reader unavailable; no pod identity")
+        from waggle.data.node_info_env import read_node_info
+    except ImportError:
+        logger.warning("waggle.data.node_info_env unavailable (pywaggle < 0.57.1?); "
+                       "no pod identity")
         return None
     return read_node_info()
 
